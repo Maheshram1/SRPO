@@ -20,7 +20,6 @@ import torch.nn as nn
 
 
 class MochiModulatedRMSNorm(nn.Module):
-
     def __init__(self, eps: float):
         super().__init__()
 
@@ -40,7 +39,6 @@ class MochiModulatedRMSNorm(nn.Module):
 
 
 class MochiRMSNorm(nn.Module):
-
     def __init__(self, dim, eps: float, elementwise_affine=True):
         super().__init__()
 
@@ -66,7 +64,6 @@ class MochiRMSNorm(nn.Module):
 
 
 class MochiLayerNormContinuous(nn.Module):
-
     def __init__(
         self,
         embedding_dim: int,
@@ -78,9 +75,7 @@ class MochiLayerNormContinuous(nn.Module):
 
         # AdaLN
         self.silu = nn.SiLU()
-        self.linear_1 = nn.Linear(conditioning_embedding_dim,
-                                  embedding_dim,
-                                  bias=bias)
+        self.linear_1 = nn.Linear(conditioning_embedding_dim, embedding_dim, bias=bias)
         self.norm = MochiModulatedRMSNorm(eps=eps)
 
     def forward(
@@ -125,8 +120,9 @@ class MochiRMSNormZero(nn.Module):
         emb = self.linear(self.silu(emb))
         scale_msa, gate_msa, scale_mlp, gate_mlp = emb.chunk(4, dim=1)
 
-        hidden_states = self.norm(hidden_states,
-                                  (1 + scale_msa[:, None].to(torch.float32)))
+        hidden_states = self.norm(
+            hidden_states, (1 + scale_msa[:, None].to(torch.float32))
+        )
         hidden_states = hidden_states.to(hidden_states_dtype)
 
         return hidden_states, gate_msa, scale_mlp, gate_mlp

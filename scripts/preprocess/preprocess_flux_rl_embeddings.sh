@@ -1,7 +1,7 @@
-GPU_NUM=8 # 2,4,8
+GPU_NUM=4 # 2,4,8
 MODEL_PATH="black-forest-labs/FLUX.1-dev"
 OUTPUT_DIR="data/rl_embeddings"
-torchrun --nproc_per_node=$GPU_NUM --master_port 19002 \
+CUDA_VISIBLE_DEVICES=4,5,6,7 torchrun --nproc_per_node=$GPU_NUM --master_port 19002 \
     fastvideo/data_preprocess/preprocess_flux_embedding.py \
     --model_path $MODEL_PATH \
     --output_dir $OUTPUT_DIR \

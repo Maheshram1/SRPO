@@ -1,6 +1,6 @@
 # Copyright (c) [2025] [FastVideo Team]
 # Copyright (c) [2025] [ByteDance Ltd. and/or its affiliates.]
-# SPDX-License-Identifier: [Apache License 2.0] 
+# SPDX-License-Identifier: [Apache License 2.0]
 #
 # This file has been modified by [ByteDance Ltd. and/or its affiliates.] in 2025.
 #
@@ -18,14 +18,17 @@ import random
 
 class LatentDataset(Dataset):
     def __init__(
-        self, json_path, num_latent_t, cfg_rate,
+        self,
+        json_path,
+        num_latent_t,
+        cfg_rate,
     ):
         # data_merge_path: video_dir, latent_dir, prompt_embed_dir, json_path
         self.json_path = json_path
         self.cfg_rate = cfg_rate
         self.datase_dir_path = os.path.dirname(json_path)
-        #self.video_dir = os.path.join(self.datase_dir_path, "video")
-        #self.latent_dir = os.path.join(self.datase_dir_path, "latent")
+        # self.video_dir = os.path.join(self.datase_dir_path, "video")
+        # self.latent_dir = os.path.join(self.datase_dir_path, "latent")
         self.prompt_embed_dir = os.path.join(self.datase_dir_path, "prompt_embed")
         self.prompt_attention_mask_dir = os.path.join(
             self.datase_dir_path, "prompt_attention_mask"
@@ -45,7 +48,7 @@ class LatentDataset(Dataset):
         ]
 
     def __getitem__(self, idx):
-        #latent_file = self.data_anno[idx]["latent_path"]
+        # latent_file = self.data_anno[idx]["latent_path"]
         prompt_embed_file = self.data_anno[idx]["prompt_embed_path"]
         prompt_attention_mask_file = self.data_anno[idx]["prompt_attention_mask"]
         if random.random() < self.cfg_rate:
@@ -64,7 +67,7 @@ class LatentDataset(Dataset):
                 map_location="cpu",
                 weights_only=True,
             )
-        return prompt_embed, prompt_attention_mask, self.data_anno[idx]['caption']
+        return prompt_embed, prompt_attention_mask, self.data_anno[idx]["caption"]
 
     def __len__(self):
         return len(self.data_anno)
@@ -79,21 +82,19 @@ def latent_collate_function(batch):
     # attn mask
     prompt_embeds = torch.stack(prompt_embeds, dim=0)
     prompt_attention_masks = torch.stack(prompt_attention_masks, dim=0)
-    #latents = torch.stack(latents, dim=0)
+    # latents = torch.stack(latents, dim=0)
     return prompt_embeds, prompt_attention_masks, caption
 
 
 if __name__ == "__main__":
-    dataset = LatentDataset("data/rl_embeddings/videos2caption.json", num_latent_t=28, cfg_rate=0.0)
+    dataset = LatentDataset(
+        "data/rl_embeddings/videos2caption.json", num_latent_t=28, cfg_rate=0.0
+    )
     dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=2, shuffle=False, collate_fn=latent_collate_function
     )
     for prompt_embed, prompt_attention_mask, caption in dataloader:
-        print(
-            prompt_embed.shape,
-            prompt_attention_mask.shape,
-            caption
-        )
+        print(prompt_embed.shape, prompt_attention_mask.shape, caption)
         import pdb
 
         pdb.set_trace()

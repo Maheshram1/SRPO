@@ -1,4 +1,4 @@
-#This code file is from [https://github.com/hao-ai-lab/FastVideo], which is licensed under Apache License 2.0.
+# This code file is from [https://github.com/hao-ai-lab/FastVideo], which is licensed under Apache License 2.0.
 
 import os
 import pdb

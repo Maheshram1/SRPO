@@ -1,6 +1,6 @@
 # Copyright (c) [2025] [FastVideo Team]
 # Copyright (c) [2025] [ByteDance Ltd. and/or its affiliates.]
-# SPDX-License-Identifier: [Apache License 2.0] 
+# SPDX-License-Identifier: [Apache License 2.0]
 #
 # This file has been modified by [ByteDance Ltd. and/or its affiliates.] in 2025.
 #
@@ -18,21 +18,22 @@ import random
 
 class LatentDataset(Dataset):
     def __init__(
-        self, json_path, num_latent_t, cfg_rate,
+        self,
+        json_path,
+        num_latent_t,
+        cfg_rate,
     ):
         # data_merge_path: video_dir, latent_dir, prompt_embed_dir, json_path
         self.json_path = json_path
         self.cfg_rate = cfg_rate
         self.datase_dir_path = os.path.dirname(json_path)
-        #self.video_dir = os.path.join(self.datase_dir_path, "video")
-        #self.latent_dir = os.path.join(self.datase_dir_path, "latent")
+        # self.video_dir = os.path.join(self.datase_dir_path, "video")
+        # self.latent_dir = os.path.join(self.datase_dir_path, "latent")
         self.prompt_embed_dir = os.path.join(self.datase_dir_path, "prompt_embed")
         self.pooled_prompt_embeds_dir = os.path.join(
             self.datase_dir_path, "pooled_prompt_embeds"
         )
-        self.text_ids_dir = os.path.join(
-            self.datase_dir_path, "text_ids"
-        )
+        self.text_ids_dir = os.path.join(self.datase_dir_path, "text_ids")
         with open(self.json_path, "r") as f:
             self.data_anno = json.load(f)
         self.num_latent_t = num_latent_t
@@ -46,7 +47,7 @@ class LatentDataset(Dataset):
         ]
 
     def __getitem__(self, idx):
-        #latent_file = self.data_anno[idx]["latent_path"]
+        # latent_file = self.data_anno[idx]["latent_path"]
         prompt_embed_file = self.data_anno[idx]["prompt_embed_path"]
         pooled_prompt_embeds_file = self.data_anno[idx]["pooled_prompt_embeds_path"]
         text_ids_file = self.data_anno[idx]["text_ids"]
@@ -59,20 +60,30 @@ class LatentDataset(Dataset):
                 weights_only=True,
             )
             pooled_prompt_embeds = torch.load(
-                os.path.join(
-                    self.pooled_prompt_embeds_dir, pooled_prompt_embeds_file
-                ),
+                os.path.join(self.pooled_prompt_embeds_dir, pooled_prompt_embeds_file),
                 map_location="cpu",
                 weights_only=True,
             )
             text_ids = torch.load(
-                os.path.join(
-                    self.text_ids_dir, text_ids_file
-                ),
+                os.path.join(self.text_ids_dir, text_ids_file),
                 map_location="cpu",
                 weights_only=True,
             )
-        return prompt_embed, pooled_prompt_embeds, text_ids, self.data_anno[idx]['caption']
+        item = self.data_anno[idx]
+        # Provide per-sample metadata for prompt construction when available
+        meta = {
+            "caption": item.get("caption", ""),
+            # Prefer explicit MIA fields when present; fall back to generic keys
+            "category": item.get("mia_category", item.get("category")),
+            "region": item.get("mia_region", item.get("region")),
+            # If precomputed positive/negative prompts exist, pass them through
+            "pos_prompt": item.get("pos_prompt"),
+            "neg_prompt": item.get("neg_prompt"),
+            # Ground-truth image identifiers/paths if available
+            "image_path": item.get("image_path"),
+            "item": item.get("Item") or item.get("item"),
+        }
+        return prompt_embed, pooled_prompt_embeds, text_ids, meta
 
     def __len__(self):
         return len(self.data_anno)
@@ -88,21 +99,19 @@ def latent_collate_function(batch):
     prompt_embeds = torch.stack(prompt_embeds, dim=0)
     pooled_prompt_embeds = torch.stack(pooled_prompt_embeds, dim=0)
     text_ids = torch.stack(text_ids, dim=0)
-    #latents = torch.stack(latents, dim=0)
+    # latents = torch.stack(latents, dim=0)
     return prompt_embeds, pooled_prompt_embeds, text_ids, caption
 
 
 if __name__ == "__main__":
-    dataset = LatentDataset("data/rl_embeddings/videos2caption.json", num_latent_t=28, cfg_rate=0.0)
+    dataset = LatentDataset(
+        "data/rl_embeddings/videos2caption.json", num_latent_t=28, cfg_rate=0.0
+    )
     dataloader = torch.utils.data.DataLoader(
         dataset, batch_size=2, shuffle=False, collate_fn=latent_collate_function
     )
     for prompt_embed, prompt_attention_mask, caption in dataloader:
-        print(
-            prompt_embed.shape,
-            prompt_attention_mask.shape,
-            caption
-        )
+        print(prompt_embed.shape, prompt_attention_mask.shape, caption)
         import pdb
 
         pdb.set_trace()

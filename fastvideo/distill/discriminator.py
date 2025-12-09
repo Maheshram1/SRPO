@@ -1,4 +1,4 @@
-#This code file is from [https://github.com/hao-ai-lab/FastVideo], which is licensed under Apache License 2.0.
+# This code file is from [https://github.com/hao-ai-lab/FastVideo], which is licensed under Apache License 2.0.
 
 import torch.nn as nn
 from diffusers.utils import logging
@@ -7,7 +7,6 @@ logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 
 class DiscriminatorHead(nn.Module):
-
     def __init__(self, input_channel, output_channel=1):
         super().__init__()
         inner_channel = 1024
@@ -41,7 +40,6 @@ class DiscriminatorHead(nn.Module):
 
 
 class Discriminator(nn.Module):
-
     def __init__(
         self,
         stride=8,
@@ -54,18 +52,22 @@ class Discriminator(nn.Module):
         self.stride = stride
         self.num_h_per_head = num_h_per_head
         self.head_num = len(adapter_channel_dims)
-        self.heads = nn.ModuleList([
-            nn.ModuleList([
-                DiscriminatorHead(adapter_channel)
-                for _ in range(self.num_h_per_head)
-            ]) for adapter_channel in adapter_channel_dims
-        ])
+        self.heads = nn.ModuleList(
+            [
+                nn.ModuleList(
+                    [
+                        DiscriminatorHead(adapter_channel)
+                        for _ in range(self.num_h_per_head)
+                    ]
+                )
+                for adapter_channel in adapter_channel_dims
+            ]
+        )
 
     def forward(self, features):
         outputs = []
 
         def create_custom_forward(module):
-
             def custom_forward(*inputs):
                 return module(*inputs)
 

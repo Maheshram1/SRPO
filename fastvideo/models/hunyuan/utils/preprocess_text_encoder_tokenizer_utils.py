@@ -5,7 +5,6 @@ from transformers import AutoProcessor, LlavaForConditionalGeneration
 
 
 def preprocess_text_encoder_tokenizer(args):
-
     processor = AutoProcessor.from_pretrained(args.input_dir)
     model = LlavaForConditionalGeneration.from_pretrained(
         args.input_dir,
@@ -18,7 +17,6 @@ def preprocess_text_encoder_tokenizer(args):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input_dir",
