@@ -128,9 +128,6 @@ Online RL generates rollouts during training and optimizes directly on the rewar
 ```bash
 # HPSv2 as reward model
 bash scripts/finetune/SRPO_training_hpsv2.sh
-
-# PickScore as reward model (optional)
-bash scripts/finetune/SRPO_training_ps.sh
 ```
 
 #### Offline RL Training
@@ -168,8 +165,7 @@ pdsh -w $node_ip "conda activate SRPO;cd <project path>; bash scripts/finetune/S
 Evaluation is performed on the CuRe benchmark using:
 
 - **Multimodal Large Language Models (MLLMs)**: For semantic and cultural alignment assessment
-- **Human-aligned Reward Models**: HPSv2 and PickScore for perceptual quality
-- **Alignment Proxies**: Additional metrics for comprehensive evaluation
+
 
 ## Customization
 
