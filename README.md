@@ -165,6 +165,7 @@ pdsh -w $node_ip "conda activate SRPO;cd <project path>; bash scripts/finetune/S
 Evaluation is performed on the CuRe benchmark using:
 
 - **Multimodal Large Language Models (MLLMs)**: For semantic and cultural alignment assessment
+Check ``Cube_Clean.ipynb`` for deatiled evaluation setup. 
 
 
 ## Customization
