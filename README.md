@@ -74,10 +74,16 @@ This fork uses prompts from the **CuRe dataset** with MIA attributes. Prepare yo
   "pooled_prompt_embeds_path": "path/to/pooled_embeds",
   "text_ids": "path/to/text_ids"
 }
+
 ```
+### MIA-Based Signal Construction
 
-Pre-extract text embeddings for efficiency:
+The training automatically constructs positive/negative signals from MIA attributes:
 
+- **Positive prompt**: `{base_caption}. {mia_category}, {mia_region}` (enriched with cultural attributes)
+- **Negative prompt**: `{base_caption}` (under-specified, missing cultural context)
+
+This guides the model to learn better representations of long-tail cultural concepts.
 ```bash
 bash scripts/preprocess/preprocess_flux_rl_embeddings.sh
 cp videos2caption2.json ./data/rl_embeddings
@@ -90,21 +96,10 @@ cp videos2caption2.json ./data/rl_embeddings
 bash scripts/finetune/SRPO_training_hpsv2.sh
 ```
 
-#### MIA-Based Signal Construction
-
-The training automatically constructs positive/negative signals from MIA attributes:
-
-- **Positive prompt**: `{base_caption}. {mia_category}, {mia_region}` (enriched with cultural attributes)
-- **Negative prompt**: `{base_caption}` (under-specified, missing cultural context)
-
-This guides the model to learn better representations of long-tail cultural concepts.
-
 ### Offline RL Training
 Offline RL uses a fixed dataset of images, enabling training with fewer computational resources.
 
 The codebase supports offline RL by providing image-text pairs in the dataset. Configure your training script to use the offline dataset mode.
-
-
 
 ### Distributed Training
 
