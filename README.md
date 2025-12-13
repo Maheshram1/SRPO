@@ -55,39 +55,13 @@ huggingface-cli download --resume-download xswu/HPSv2 HPS_v2.1_compressed.pt --l
 huggingface-cli download --resume-download laion/CLIP-ViT-H-14-laion2B-s32B-b79K open_clip_pytorch_model.bin --local-dir ./data/hps_ckpt
 ```
 
-## Inference
-
-```python
-from diffusers import FluxPipeline
-from safetensors.torch import load_file
-import torch
-
-prompt = 'A traditional ceremony in a specific cultural context'
-pipe = FluxPipeline.from_pretrained(
-    './data/flux',
-    torch_dtype=torch.bfloat16,
-    use_safetensors=True
-).to("cuda")
-state_dict = load_file("./srpo/diffusion_pytorch_model.safetensors")
-pipe.transformer.load_state_dict(state_dict)
-
-image = pipe(
-    prompt,
-    guidance_scale=3.5,
-    height=1024,
-    width=1024,
-    num_inference_steps=50,
-    max_sequence_length=512,
-    generator=torch.Generator(device="cuda")
-).images[0]
-```
 
 
 ## Training
 
 ### Data Preparation
 
-This fork uses prompts from the **CuRe dataset** with MIA attributes. The dataset should include:
+This fork uses prompts from the **CuRe dataset** with MIA attributes. Prepare your dataset JSON with the following format:
 
 ```json
 {
@@ -102,11 +76,9 @@ This fork uses prompts from the **CuRe dataset** with MIA attributes. The datase
 }
 ```
 
-```bash
-# Prepare CuRe dataset prompts in ./prompts.txt
-# Format: JSON with fields: caption, mia_category, mia_region, (optional) pos_prompt, neg_prompt
+Pre-extract text embeddings for efficiency:
 
-# Pre-extract text embeddings for efficiency
+```bash
 bash scripts/preprocess/preprocess_flux_rl_embeddings.sh
 cp videos2caption2.json ./data/rl_embeddings
 ```
@@ -118,12 +90,7 @@ cp videos2caption2.json ./data/rl_embeddings
 bash scripts/finetune/SRPO_training_hpsv2.sh
 ```
 
-### Offline RL Training
-Offline RL uses a fixed dataset of images, enabling training with fewer computational resources.
-
-The codebase supports offline RL by providing image-text pairs in the dataset. Configure your training script to use the offline dataset mode.
-
-### MIA-Based Signal Construction
+#### MIA-Based Signal Construction
 
 The training automatically constructs positive/negative signals from MIA attributes:
 
@@ -131,6 +98,13 @@ The training automatically constructs positive/negative signals from MIA attribu
 - **Negative prompt**: `{base_caption}` (under-specified, missing cultural context)
 
 This guides the model to learn better representations of long-tail cultural concepts.
+
+### Offline RL Training
+Offline RL uses a fixed dataset of images, enabling training with fewer computational resources.
+
+The codebase supports offline RL by providing image-text pairs in the dataset. Configure your training script to use the offline dataset mode.
+
+
 
 ### Distributed Training
 
@@ -154,33 +128,6 @@ Evaluation is performed on the CuRe benchmark using:
 
 - **Multimodal Large Language Models (MLLMs)**: For semantic and cultural alignment assessment
 Check ``Cube_Clean.ipynb`` for the detailed evaluation setup. 
-
-
-## Customization
-
-### Supporting Custom Models
-
-1. Modify `preprocess_flux_embedding.py` and `latent_flux_rl_datasets.py` to pre-extract text embeddings from your custom training dataset.
-2. Adjust `args.vis_sampling_step` to modify sigma_schedule. Typically, this value matches the model's regular inference steps.
-3. Direct-propagation needs significant GPU memory. Enabling VAE gradient checkpointing before reward calculation reduces this greatly.
-4. If implementing outside FastVideo, first disable the inversion branch to check for reward hacking—its presence likely indicates correct implementation.
-
-### Dataset Format
-
-The dataset JSON should include MIA-related fields:
-
-```json
-{
-  "caption": "Base caption text",
-  "mia_category": "Cultural category",
-  "mia_region": "Geographic region",
-  "pos_prompt": "Optional: Explicit positive prompt",
-  "neg_prompt": "Optional: Explicit negative prompt",
-  "prompt_embed_path": "path/to/embedding",
-  "pooled_prompt_embeds_path": "path/to/pooled_embeds",
-  "text_ids": "path/to/text_ids"
-}
-```
 
 ---
 
@@ -256,14 +203,40 @@ modal volume get srpo-outputs flux-cure-lora/generated/ ./generated/
 
 ---
 
+## Customization
+
+### Supporting Custom Models
+
+1. Modify `preprocess_flux_embedding.py` and `latent_flux_rl_datasets.py` to pre-extract text embeddings from your custom training dataset.
+2. Adjust `args.vis_sampling_step` to modify sigma_schedule. Typically, this value matches the model's regular inference steps.
+3. Direct-propagation needs significant GPU memory. Enabling VAE gradient checkpointing before reward calculation reduces this greatly.
+4. If implementing outside FastVideo, first disable the inversion branch to check for reward hacking—its presence likely indicates correct implementation.
+
+### Dataset Format
+
+The dataset JSON should include MIA-related fields:
+
+```json
+{
+  "caption": "Base caption text",
+  "mia_category": "Cultural category",
+  "mia_region": "Geographic region",
+  "pos_prompt": "Optional: Explicit positive prompt",
+  "neg_prompt": "Optional: Explicit negative prompt",
+  "prompt_embed_path": "path/to/embedding",
+  "pooled_prompt_embeds_path": "path/to/pooled_embeds",
+  "text_ids": "path/to/text_ids"
+}
+```
+
+---
+
 ## Acknowledgement
 
 We build upon and acknowledge the following works:
 
 - **[SRPO](https://github.com/Tencent-Hunyuan/SRPO)**: Original Semantic Relative Preference Optimization framework
 - **[CuRe Benchmark](https://github.com/aniketrege/cure)**: Cultural Representation benchmark with MIA
-- **[FastVideo](https://github.com/hao-ai-lab/FastVideo)**: Base training infrastructure
-- **[DanceGRPO](https://github.com/XueZeyue/DanceGRPO)**: Related RLHF work for diffusion models
 
 ## License
 
