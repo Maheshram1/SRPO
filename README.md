@@ -37,40 +37,26 @@ conda activate SRPO
 bash ./env_setup.sh 
 ```
 
-The environment dependency is basically the same as DanceGRPO
-
 ## Download Models
 
-1. **Base SRPO Model**: Download the original SRPO checkpoint
 ```bash
+# Base SRPO checkpoint
 mkdir ./srpo
 huggingface-cli login
 huggingface-cli download --resume-download Tencent/SRPO diffusion_pytorch_model.safetensors --local-dir ./srpo/
-```
 
-2. **FLUX Base Model**: Download FLUX.1-dev for training
-```bash
-mkdir ./data/flux
-huggingface-cli login
+# FLUX base model
+mkdir -p ./data/flux
 huggingface-cli download --resume-download black-forest-labs/FLUX.1-dev --local-dir ./data/flux
-```
 
-3. **Reward Models**: Download HPSv2 and/or PickScore
-```bash
-# HPSv2
-mkdir ./data/hps_ckpt
+# HPSv2 reward model
+mkdir -p ./data/hps_ckpt
 huggingface-cli download --resume-download xswu/HPSv2 HPS_v2.1_compressed.pt --local-dir ./data/hps_ckpt
 huggingface-cli download --resume-download laion/CLIP-ViT-H-14-laion2B-s32B-b79K open_clip_pytorch_model.bin --local-dir ./data/hps_ckpt
-
-# PickScore (optional)
-mkdir ./data/ps
-python ./scripts/huggingface/download_hf.py --repo_id yuvalkirstain/PickScore_v1 --local_dir ./data/ps
-python ./scripts/huggingface/download_hf.py --repo_id laion/CLIP-ViT-H-14-laion2B-s32B-b79K --local_dir ./data/clip
 ```
 
 ## Inference
 
-### Quick Start
 ```python
 from diffusers import FluxPipeline
 from safetensors.torch import load_file
@@ -84,6 +70,7 @@ pipe = FluxPipeline.from_pretrained(
 ).to("cuda")
 state_dict = load_file("./srpo/diffusion_pytorch_model.safetensors")
 pipe.transformer.load_state_dict(state_dict)
+
 image = pipe(
     prompt,
     guidance_scale=3.5,
@@ -95,21 +82,25 @@ image = pipe(
 ).images[0]
 ```
 
-### Using ComfyUI
-
-You can use it in [ComfyUI](https://github.com/comfyanonymous/ComfyUI). Load the workflow from [SRPO-workflow](comfyui/SRPO-workflow.json):
-
-![Example](comfyui/SRPO-workflow.png)
 
 ## Training
 
-### Data
+### Data Preparation
 
 This fork uses prompts from the **CuRe dataset** with MIA attributes. The dataset should include:
 
-- Base captions
-- MIA attributes: `mia_category` and `mia_region` 
-- Optional: Pre-computed `pos_prompt` and `neg_prompt` for explicit positive/negative signal construction
+```json
+{
+  "caption": "Base caption text",
+  "mia_category": "Cultural category",
+  "mia_region": "Geographic region",
+  "pos_prompt": "Optional: Explicit positive prompt",
+  "neg_prompt": "Optional: Explicit negative prompt",
+  "prompt_embed_path": "path/to/embedding",
+  "pooled_prompt_embeds_path": "path/to/pooled_embeds",
+  "text_ids": "path/to/text_ids"
+}
+```
 
 ```bash
 # Prepare CuRe dataset prompts in ./prompts.txt
@@ -120,17 +111,14 @@ bash scripts/preprocess/preprocess_flux_rl_embeddings.sh
 cp videos2caption2.json ./data/rl_embeddings
 ```
 
-### Training Modes
-
-#### Online RL Training
-Online RL generates rollouts during training and optimizes directly on the reward signal.
+### Online RL Training
 
 ```bash
 # HPSv2 as reward model
 bash scripts/finetune/SRPO_training_hpsv2.sh
 ```
 
-#### Offline RL Training
+### Offline RL Training
 Offline RL uses a fixed dataset of images, enabling training with fewer computational resources.
 
 The codebase supports offline RL by providing image-text pairs in the dataset. Configure your training script to use the offline dataset mode.
@@ -209,11 +197,7 @@ modal setup
 
 # Create HuggingFace secret
 modal secret create huggingface HF_TOKEN=your_token_here
-
-# Create persistent volumes
-modal volume create hf-cache
-modal volume create srpo-data
-modal volume create srpo-outputs
+modal volume create hf-cache srpo-data srpo-outputs
 ```
 
 ### Dataset
@@ -280,29 +264,6 @@ We build upon and acknowledge the following works:
 - **[CuRe Benchmark](https://github.com/aniketrege/cure)**: Cultural Representation benchmark with MIA
 - **[FastVideo](https://github.com/hao-ai-lab/FastVideo)**: Base training infrastructure
 - **[DanceGRPO](https://github.com/XueZeyue/DanceGRPO)**: Related RLHF work for diffusion models
-
-<!-- ## Citation
-
-If you use this work, please cite both SRPO and CuRe:
-
-```bibtex
-@misc{shen2025directlyaligningdiffusiontrajectory,
-      title={Directly Aligning the Full Diffusion Trajectory with Fine-Grained Human Preference}, 
-      author={Xiangwei Shen and Zhimin Li and Zhantao Yang and Shiyi Zhang and Yingfang Zhang and Donghao Li and Chunyu Wang and Qinglin Lu and Yansong Tang},
-      year={2025},
-      eprint={2509.06942},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2509.06942}, 
-}
-
-@misc{cure2024benchmark,
-      title={CuRe: A Benchmark for Cultural Representation in Text-to-Image Generation},
-      author={CuRe Authors},
-      year={2024},
-      url={https://github.com/your-cure-repo}
-}
-``` -->
 
 ## License
 
