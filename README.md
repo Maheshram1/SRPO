@@ -194,12 +194,90 @@ The dataset JSON should include MIA-related fields:
 }
 ```
 
+---
+
+## FLUX LoRA Training on Modal
+
+For quick experimentation, we provide Modal scripts for cloud-based LoRA fine-tuning.
+
+### Modal Setup
+
+```bash
+# Install Modal CLI
+pip install modal
+modal setup
+
+# Create HuggingFace secret
+modal secret create huggingface HF_TOKEN=your_token_here
+
+# Create persistent volumes
+modal volume create hf-cache
+modal volume create srpo-data
+modal volume create srpo-outputs
+```
+
+### Dataset
+
+We use [mahesh111000/cure-annotated](https://huggingface.co/datasets/mahesh111000/cure-annotated) which contains:
+- **Images**: Cultural foods, artifacts, clothing from around the world
+- **Item**: Short name (e.g., `"Panta_Bhat"`, `"Jollof_Rice"`)
+- **generated_caption**: Detailed description of the item
+
+### Training
+
+```bash
+cd scripts/modal
+
+# Train with detailed captions (recommended)
+python flux_lora_train.py --caption_column generated_caption --steps 1000
+
+# Train with item names (for "an image of X" prompts)
+python flux_lora_train.py --caption_column Item --steps 1000
+```
+
+**Training Configuration:**
+- GPUs: 4x A100-80GB
+- Mixed Precision: FP16
+- Optimizer: Prodigy (adaptive lr)
+- Effective Batch: 16 (1 × 4 grad_accum × 4 GPUs)
+- Checkpoints: Every 100 steps
+
+### Inference
+
+```bash
+cd scripts/modal
+
+# Generate 8 images per item (parallel on up to 8 GPUs)
+python flux_lora_inference.py --json_file items.json --num_images 8
+
+# Generate for specific items
+python flux_lora_inference.py --items "Panta_Bhat" "Jollof_Rice" --num_images 8
+
+# Sequential mode (single GPU)
+python flux_lora_inference.py --json_file items.json --sequential
+```
+
+### Download Results
+
+```bash
+# List checkpoints
+modal volume ls srpo-outputs flux-cure-lora/
+
+# Download model
+modal volume get srpo-outputs flux-cure-lora/ ./flux-cure-lora/
+
+# Download generated images
+modal volume get srpo-outputs flux-cure-lora/generated/ ./generated/
+```
+
+---
+
 ## Acknowledgement
 
 We build upon and acknowledge the following works:
 
 - **[SRPO](https://github.com/Tencent-Hunyuan/SRPO)**: Original Semantic Relative Preference Optimization framework
-- **[CuRe Benchmark](https://github.com/your-cure-repo)**: Cultural Representation benchmark with MIA
+- **[CuRe Benchmark](https://github.com/aniketrege/cure)**: Cultural Representation benchmark with MIA
 - **[FastVideo](https://github.com/hao-ai-lab/FastVideo)**: Base training infrastructure
 - **[DanceGRPO](https://github.com/XueZeyue/DanceGRPO)**: Related RLHF work for diffusion models
 
